@@ -1,7 +1,7 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 import os
 
-project = builder.LibraryProject('cutlrbtree_overflow_fix')
+project = builder.LibraryProject('cutlrbtreefix')
 project.sources += [
   'extension.cpp',
   os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp'),
@@ -28,6 +28,6 @@ for sdk_name in Extension.sdks:
     if not cxx.target.arch in sdk.platformSpec[cxx.target.platform]:
       continue
     
-    binary = Extension.HL2ExtConfig(project, builder, cxx, 'cutlrbtree_overflow_fix.ext.' + sdk.ext, sdk)
+    binary = Extension.HL2ExtConfig(project, builder, cxx, 'cutlrbtreefix.ext.' + sdk.ext, sdk)
 
 Extension.extensions += builder.Add(project)

@@ -42,7 +42,7 @@
 #define SMEXT_CONF_DESCRIPTION	"Fix CUtlRBTree overflow on level transition"
 #define SMEXT_CONF_VERSION		"0.1"
 #define SMEXT_CONF_AUTHOR		"Evgeniy \"shqke\" Kazakov"
-#define SMEXT_CONF_URL			"https://github.com/fdxx/cutlrbtree_overflow_fix"
+#define SMEXT_CONF_URL			"https://github.com/fdxx/cutlrbtreefix"
 #define SMEXT_CONF_LOGTAG		"CUtlRBTreeFix"
 #define SMEXT_CONF_LICENSE		"GPL"
 #define SMEXT_CONF_DATESTRING	__DATE__

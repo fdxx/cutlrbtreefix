@@ -31,14 +31,14 @@ def CopyFiles(src, dest, files):
 # Gamedata file
 CopyFiles('extra', 'addons/sourcemod/gamedata',
   [
-    'cutlrbtree_overflow_fix.txt',
+    'cutlrbtreefix.txt',
   ]
 )
 
 # Autoload file
 CopyFiles('extra', 'addons/sourcemod/extensions',
   [
-    'cutlrbtree_overflow_fix.autoload',
+    'cutlrbtreefix.autoload',
   ]
 )
 

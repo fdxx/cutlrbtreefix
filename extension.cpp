@@ -68,9 +68,9 @@ DETOUR_DECL_MEMBER0(CFrameSnapshotManager_LevelChanged, void)
 bool CUtlRBTreeFix::SDK_OnLoad( char *error, size_t maxlength, bool late )
 {
 	IGameConfig *gc = NULL;
-	if (!gameconfs->LoadGameConfigFile("cutlrbtree_overflow_fix", &gc, error, maxlength))
+	if (!gameconfs->LoadGameConfigFile("cutlrbtreefix", &gc, error, maxlength))
 	{
-		ke::SafeStrcpy(error, maxlength, "Unable to load cutlrbtree_overflow_fix.txt file");
+		ke::SafeStrcpy(error, maxlength, "Unable to load cutlrbtreefix.txt file");
 		return false;
 	}
 
