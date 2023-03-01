@@ -33,5 +33,5 @@ python3 ../configure.py --enable-optimize --sm-path="../../sourcemod" --mms-path
 
 ambuild
 
-## Check the package folder.
+## Check the cutlrbtreefix/build/package folder.
 ```
