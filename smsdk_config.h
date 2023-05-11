@@ -39,9 +39,9 @@
 
 /* Basic information exposed publicly */
 #define SMEXT_CONF_NAME			"CUtlRBTree overflow fix"
-#define SMEXT_CONF_DESCRIPTION	"Fix CUtlRBTree overflow on level transition"
+#define SMEXT_CONF_DESCRIPTION	"Fix CUtlRBTree overflow"
 #define SMEXT_CONF_VERSION		"0.1"
-#define SMEXT_CONF_AUTHOR		"Evgeniy \"shqke\" Kazakov"
+#define SMEXT_CONF_AUTHOR		"Evgeniy \"shqke\" Kazakov, fdxx"
 #define SMEXT_CONF_URL			"https://github.com/fdxx/cutlrbtreefix"
 #define SMEXT_CONF_LOGTAG		"CUtlRBTreeFix"
 #define SMEXT_CONF_LICENSE		"GPL"
@@ -65,7 +65,7 @@
 //#define SMEXT_ENABLE_DBMANAGER
 #define SMEXT_ENABLE_GAMECONF
 //#define SMEXT_ENABLE_MEMUTILS
-//#define SMEXT_ENABLE_GAMEHELPERS
+#define SMEXT_ENABLE_GAMEHELPERS
 //#define SMEXT_ENABLE_TIMERSYS
 //#define SMEXT_ENABLE_THREADER
 //#define SMEXT_ENABLE_LIBSYS
@@ -76,6 +76,6 @@
 //#define SMEXT_ENABLE_TEXTPARSERS
 //#define SMEXT_ENABLE_USERMSGS
 //#define SMEXT_ENABLE_TRANSLATOR
-//#define SMEXT_ENABLE_ROOTCONSOLEMENU
+#define SMEXT_ENABLE_ROOTCONSOLEMENU
 
 #endif // _INCLUDE_SOURCEMOD_EXTENSION_CONFIG_H_

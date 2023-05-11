@@ -34,12 +34,28 @@
 #include "extension.h"
 #include <CDetour/detours.h>
 
+#include <stdarg.h>
+#include <stdio.h>
+
 CUtlRBTreeFix g_CUtlRBTreeFix;
 SMEXT_LINK(&g_CUtlRBTreeFix);
 
-int g_offset_m_PackedEntitiesPool = 0;
-CDetour *g_LevelChangedDetour = NULL;
+#define STRINGPOOL_LIMIT 65000
 
+#if defined _WIN32
+	typedef const char* (__thiscall *FuncPtr)(void*, const char*);
+#else
+	typedef const char* (__cdecl *FuncPtr)(void*, const char*);
+#endif
+
+static int g_offset_m_PackedEntitiesPool = 0;
+static int g_offset_CStringPoolCount = 0;
+
+static CDetour *g_Detour_LevelChanged = NULL;
+static CDetour *g_Detour_CStringPoolAllocate = NULL;
+
+static void *g_fnCStringPoolFind = 0;
+static char g_sLogPath[PLATFORM_MAX_PATH];
 
 class CFrameSnapshotManager
 {
@@ -50,11 +66,31 @@ public:
 	}
 };
 
+static void LogToFile(const char *msg, ...)
+{
+	FILE *fp = fopen(g_sLogPath, "at");
+	if (!fp) return;
+
+	char buffer[1024];
+	va_list ap;
+	va_start(ap, msg);
+	ke::SafeVsprintf(buffer, sizeof(buffer), msg, ap);
+	va_end(ap);
+
+	char date[32];
+	time_t t = smutils->GetAdjustedTime();
+	tm *curtime = localtime(&t);
+	strftime(date, sizeof(date), "%m/%d/%Y - %H:%M:%S", curtime);
+
+	fprintf(fp, "L %s: %s\n", date, buffer);
+	rootconsole->ConsolePrint("L %s: %s", date, buffer);
+
+	fclose(fp);
+}
 
 DETOUR_DECL_MEMBER0(CFrameSnapshotManager_LevelChanged, void)
 {
-	//smutils->LogMessage(myself, "------- CFrameSnapshotManager_LevelChanged");
-
+	//rootconsole->ConsolePrint("------- CFrameSnapshotManager_LevelChanged");
 	CFrameSnapshotManager* _this = reinterpret_cast<CFrameSnapshotManager*>(this);
 
 	// bug##: Underlying method CClassMemoryPool::Clear creates CUtlRBTree with insufficient iterator size (unsigned short)
@@ -65,48 +101,102 @@ DETOUR_DECL_MEMBER0(CFrameSnapshotManager_LevelChanged, void)
 	DETOUR_MEMBER_CALL(CFrameSnapshotManager_LevelChanged)();
 }
 
+DETOUR_DECL_MEMBER1(CStringPool_Allocate, const char *, const char *, pszValue)
+{
+	// The string pool increases with the start of each round and is not cleared until MapEnd.
+	// So we reset the current map when the game is about to crash in order to auto clear the string pool.
+
+	int count = *reinterpret_cast<uint16_t*>(this + g_offset_CStringPoolCount);
+	//rootconsole->ConsolePrint("-- CStringPool_Allocate, count = %i, str = %s", count, pszValue);
+	if (count > STRINGPOOL_LIMIT)
+	{
+		FuncPtr FindString = reinterpret_cast<FuncPtr>(g_fnCStringPoolFind);
+		if (!FindString(this, pszValue))
+		{
+			const char *map = gamehelpers->GetCurrentMap();
+			LogToFile("CurrentStringPoolCount %i exceeds %i, auto reset the current map %s, AllocString: %s", count, STRINGPOOL_LIMIT, map, pszValue);
+
+			char buffer[256];
+			ke::SafeSprintf(buffer, sizeof(buffer), "changelevel \"%s\"\n", map);
+			gamehelpers->ServerCommand(buffer);
+			return NULL;
+		}
+	}
+	return DETOUR_MEMBER_CALL(CStringPool_Allocate)(pszValue);
+}
+
 bool CUtlRBTreeFix::SDK_OnLoad( char *error, size_t maxlength, bool late )
 {
-	IGameConfig *gc = NULL;
-	if (!gameconfs->LoadGameConfigFile("cutlrbtreefix", &gc, error, maxlength))
+	IGameConfig *gamedata = NULL;
+	char buffer[128];
+
+	ke::SafeStrcpy(buffer, sizeof(buffer), "cutlrbtreefix");
+	if (!gameconfs->LoadGameConfigFile(buffer, &gamedata, error, maxlength))
 	{
-		ke::SafeStrcpy(error, maxlength, "Unable to load cutlrbtreefix.txt file");
+		ke::SafeSprintf(error, maxlength, "Unable to load %s.txt file", buffer);
 		return false;
 	}
 
-	if (!gc->GetOffset("CFrameSnapshotManager::m_PackedEntitiesPool", &g_offset_m_PackedEntitiesPool))
+	ke::SafeStrcpy(buffer, sizeof(buffer), "CFrameSnapshotManager::m_PackedEntitiesPool");
+	if (!gamedata->GetOffset(buffer, &g_offset_m_PackedEntitiesPool))
 	{
-		ke::SafeStrcpy(error, maxlength, "Failed to get CFrameSnapshotManager::m_PackedEntitiesPool offset");
+		ke::SafeSprintf(error, maxlength, "Failed to GetOffset: %s", buffer);
 		return false;
 	}
 
-	void *addr = 0;
-	if (!gc->GetMemSig("CFrameSnapshotManager::LevelChanged", &addr) || !addr)
+	ke::SafeStrcpy(buffer, sizeof(buffer), "CStringPool::Count");
+	if (!gamedata->GetOffset(buffer, &g_offset_CStringPoolCount))
 	{
-		ke::SafeStrcpy(error, maxlength, "Failed to get CFrameSnapshotManager::LevelChanged function address");
+		ke::SafeSprintf(error, maxlength, "Failed to GetOffset: %s", buffer);
 		return false;
 	}
 
-	//smutils->LogMessage(myself, "------- addr = %x, offset = %i", addr, g_offset_m_PackedEntitiesPool);
-	CDetourManager::Init(smutils->GetScriptingEngine(), gc);
-
-	g_LevelChangedDetour = DETOUR_CREATE_MEMBER(CFrameSnapshotManager_LevelChanged, addr);
-	if (!g_LevelChangedDetour)
+	ke::SafeStrcpy(buffer, sizeof(buffer), "CStringPool::Find");
+	if (!gamedata->GetMemSig(buffer, &g_fnCStringPoolFind))
 	{
-		ke::SafeStrcpy(error, maxlength, "Failed to detour CFrameSnapshotManager::LevelChanged");
+		ke::SafeSprintf(error, maxlength, "Failed to GetMemSig: %s", buffer);
 		return false;
 	}
 
-	g_LevelChangedDetour->EnableDetour();
-	gameconfs->CloseGameConfigFile(gc);
+	CDetourManager::Init(smutils->GetScriptingEngine(), gamedata);
+	
+	ke::SafeStrcpy(buffer, sizeof(buffer), "CFrameSnapshotManager::LevelChanged");
+	g_Detour_LevelChanged = DETOUR_CREATE_MEMBER(CFrameSnapshotManager_LevelChanged, buffer);
+	if (g_Detour_LevelChanged)
+		g_Detour_LevelChanged->EnableDetour();
+	else
+	{
+		ke::SafeSprintf(error, maxlength, "Failed to detour %s", buffer);
+		return false;
+	}
+
+	ke::SafeStrcpy(buffer, sizeof(buffer), "CStringPool::Allocate");
+	g_Detour_CStringPoolAllocate = DETOUR_CREATE_MEMBER(CStringPool_Allocate, buffer);
+	if (g_Detour_CStringPoolAllocate)
+		g_Detour_CStringPoolAllocate->EnableDetour();
+	else
+	{
+		ke::SafeSprintf(error, maxlength, "Failed to detour %s", buffer);
+		return false;
+	}
+
+	gameconfs->CloseGameConfigFile(gamedata);
+	smutils->BuildPath(Path_SM, g_sLogPath, sizeof(g_sLogPath), "logs/cutlrbtreefix.log");
 	return true;
 }
 
 void CUtlRBTreeFix::SDK_OnUnload()
 {
-	if (g_LevelChangedDetour != NULL) {
-		g_LevelChangedDetour->Destroy();
-		g_LevelChangedDetour = NULL;
+	if (g_Detour_LevelChanged != NULL)
+	{
+		g_Detour_LevelChanged->Destroy();
+		g_Detour_LevelChanged = NULL;
+	}
+
+	if (g_Detour_CStringPoolAllocate != NULL)
+	{
+		g_Detour_CStringPoolAllocate->Destroy();
+		g_Detour_CStringPoolAllocate = NULL;
 	}
 }
 

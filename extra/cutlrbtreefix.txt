@@ -9,6 +9,12 @@
 				"linux"		"40"
 				"windows"	"40"
 			}
+
+			"CStringPool::Count" // CUtlRBTree::m_NumElements
+			{
+				"linux"		"18"
+				"windows"	"18"
+			}
 		}
 		
 		"Signatures"
@@ -19,6 +25,22 @@
 				"linux"		"@_ZN21CFrameSnapshotManager12LevelChangedEv"
 				"windows"	"\x56\x8B\xF1\x8D\x4E\x58\xE8\x2A\x2A\x2A\x2A\x8D\x4E\x28"
 				// 56 8B F1 8D 4E 58 E8 ? ? ? ? 8D 4E 28
+			}
+
+			"CStringPool::Allocate"
+			{
+				"library"   "server"
+				"linux"     "@_ZN11CStringPool8AllocateEPKc"
+				"windows"	"\x55\x8B\xEC\x83\xEC\x0C\x56\x8D\x45\x08"
+				// 55 8B EC 83 EC 0C 56 8D 45 08
+			}
+
+			"CStringPool::Find"
+			{
+				"library"   "server"
+				"linux"     "@_ZN11CStringPool4FindEPKc"
+				"windows"	"\x55\x8B\xEC\x53\x56\x57\x8D\x45\x08"
+				// 55 8B EC 53 56 57 8D 45 08
 			}
 		}
 	}
@@ -32,6 +54,12 @@
 				"linux"		"40"
 				"windows"	"40"
 			}
+
+			"CStringPool::Count"
+			{
+				"linux"		"18"
+				"windows"	"18"
+			}
 		}
 		
 		"Signatures"
@@ -42,6 +70,22 @@
 				"linux"		"@_ZN21CFrameSnapshotManager12LevelChangedEv"
 				"windows"	"\x56\x8B\xF1\x8D\x4E\x58"
 				// 56 8B F1 8D 4E 58
+			}
+
+			"CStringPool::Allocate"
+			{
+				"library"   "server"
+				"linux"     "@_ZN11CStringPool8AllocateEPKc"
+				"windows"	"\x51\x56\x8D\x44\x24\x0C\x50\x8B\xF1"
+				// 51 56 8D 44 24 0C 50 8B F1
+			}
+
+			"CStringPool::Find"
+			{
+				"library"   "server"
+				"linux"     "@_ZN11CStringPool4FindEPKc"
+				"windows"	"\x53\x56\x57\x8D\x44\x24\x10\x50\x8B\xF9"
+				// 53 56 57 8D 44 24 10 50 8B F9
 			}
 		}
 	}

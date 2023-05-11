@@ -1,6 +1,7 @@
 ## About
 
-Fix "CUtlRBTree overflow" on level transition. a separate extension version extracted from [sourcetvsupport](https://github.com/shqke/sourcetvsupport).
+- Fix "CUtlRBTree overflow" on level transition. extracted from [sourcetvsupport](https://github.com/shqke/sourcetvsupport).
+- Auto reset current map when string pool limit is exceeded. (During the game, the level transition has not yet been performed).
 
 ## Requirements:
 
