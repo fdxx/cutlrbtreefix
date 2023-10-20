@@ -28,7 +28,7 @@ pip install git+https://github.com/alliedmodders/ambuild
 cd cutlrbtreefix
 mkdir build && cd build
 
-alias CC=clang && alias CXX=clang++
+export CC=clang && export CXX=clang++
 
 python3 ../configure.py --enable-optimize --sm-path="../../sourcemod" --mms-path="../../metamod"
 
