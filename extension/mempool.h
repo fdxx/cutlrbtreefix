@@ -1,4 +1,4 @@
-//===== Copyright © 1996-2005, Valve Corporation, All rights reserved. ======//
+//===== Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ======//
 //
 // Purpose: 
 //
@@ -35,60 +35,24 @@ public:
 	// Ways the memory pool can grow when it needs to make a new blob.
 	enum MemoryPoolGrowType_t
 	{
-		GROW_NONE = 0,		// Don't allow new blobs.
-		GROW_FAST = 1,		// New blob size is numElements * (i+1)  (ie: the blocks it allocates
+		GROW_NONE=0,		// Don't allow new blobs.
+		GROW_FAST=1,		// New blob size is numElements * (i+1)  (ie: the blocks it allocates
 							// get larger and larger each time it allocates one).
-							GROW_SLOW = 2			// New blob size is numElements.
+		GROW_SLOW=2			// New blob size is numElements.
 	};
 
-	CUtlMemoryPool(int blockSize, int numElements, int growMode = GROW_FAST, const char *pszAllocOwner = NULL, int nAlignment = 0);
+	CUtlMemoryPool( int blockSize, int numElements, int growMode = GROW_FAST, const char *pszAllocOwner = NULL, int nAlignment = 0 );
 	~CUtlMemoryPool();
 
-	//-----------------------------------------------------------------------------
-	// Purpose: Frees a block of memory
-	// Input  : *memBlock - the memory to free
-	//-----------------------------------------------------------------------------
-	void		Free(void* memBlock)
-	{
-		if (!memBlock)
-			return;  // trying to delete NULL pointer, ignore
-
-#ifdef _DEBUG
-					 // check to see if the memory is from the allocated range
-		bool bOK = false;
-		for (CBlob* pCur = m_BlobHead.m_pNext; pCur != &m_BlobHead; pCur = pCur->m_pNext)
-		{
-			if (memBlock >= pCur->m_Data && (char*)memBlock < (pCur->m_Data + pCur->m_NumBytes))
-			{
-				bOK = true;
-			}
-		}
-		Assert(bOK);
-#endif // _DEBUG
-
-#ifdef _DEBUG	
-		// invalidate the memory
-		memset(memBlock, 0xDD, m_BlockSize);
-#endif
-
-		m_BlocksAllocated--;
-
-		// make the block point to the first item in the list
-		*((void**)memBlock) = m_pHeadOfFreeList;
-
-		// the list head is now the new block
-		m_pHeadOfFreeList = memBlock;
-	}
-
+	
 	// Frees everything
-	void		Clear()
+	void Clear()
 	{
-		// Free everything..
-		CBlob* pNext;
-		for (CBlob* pCur = m_BlobHead.m_pNext; pCur != &m_BlobHead; pCur = pNext)
+		CBlob *pNext;
+		for( CBlob *pCur = m_BlobHead.m_pNext; pCur != &m_BlobHead; pCur = pNext )
 		{
 			pNext = pCur->m_pNext;
-			free(pCur);
+			free( pCur );
 		}
 		Init();
 	}
@@ -104,7 +68,7 @@ protected:
 	};
 
 	// Resets the pool
-	void		Init()
+	void Init()
 	{
 		m_NumBlobs = 0;
 		m_BlocksAllocated = 0;
@@ -138,33 +102,30 @@ template< class T >
 class CClassMemoryPoolExt : public CUtlMemoryPool
 {
 public:
-	CClassMemoryPoolExt(int numElements, int growMode = GROW_FAST, int nAlignment = 0) :
-		CUtlMemoryPool(sizeof(T), numElements, growMode, MEM_ALLOC_CLASSNAME(T), nAlignment) {}
+	CClassMemoryPoolExt(int numElements, int growMode = GROW_FAST, int nAlignment = 0 ) :
+		CUtlMemoryPool( sizeof(T), numElements, growMode, MEM_ALLOC_CLASSNAME(T), nAlignment ) {}
 
 	inline void	Clear()
 	{
 		CUtlRBTree<void *, int> freeBlocks;
-		SetDefLessFunc(freeBlocks);
+		SetDefLessFunc( freeBlocks );
 
 		void *pCurFree = m_pHeadOfFreeList;
-		while (pCurFree != NULL)
+		while ( pCurFree != NULL )
 		{
-			freeBlocks.Insert(pCurFree);
+			freeBlocks.Insert( pCurFree );
 			pCurFree = *((void**)pCurFree);
 		}
 
-		for (CBlob *pCur = m_BlobHead.m_pNext; pCur != &m_BlobHead; pCur = pCur->m_pNext)
+		for( CBlob *pCur=m_BlobHead.m_pNext; pCur != &m_BlobHead; pCur=pCur->m_pNext )
 		{
 			T *p = (T *)pCur->m_Data;
 			T *pLimit = (T *)(pCur->m_Data + pCur->m_NumBytes);
-			while (p < pLimit)
+			while ( p < pLimit )
 			{
-				if (freeBlocks.Find(p) == freeBlocks.InvalidIndex())
+				if ( freeBlocks.Find( p ) == freeBlocks.InvalidIndex() )
 				{
-#if defined(_LINUX) && defined(DEBUG)
-#error "Unsupported"
-#endif
-					Destruct(p);
+					Destruct( p );
 				}
 				p++;
 			}

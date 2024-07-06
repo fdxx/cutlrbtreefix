@@ -40,7 +40,7 @@
 /* Basic information exposed publicly */
 #define SMEXT_CONF_NAME			"CUtlRBTree overflow fix"
 #define SMEXT_CONF_DESCRIPTION	"Fix CUtlRBTree overflow"
-#define SMEXT_CONF_VERSION		"0.2"
+#define SMEXT_CONF_VERSION		"0.3"
 #define SMEXT_CONF_AUTHOR		"Evgeniy \"shqke\" Kazakov, fdxx"
 #define SMEXT_CONF_URL			"https://github.com/fdxx/cutlrbtreefix"
 #define SMEXT_CONF_LOGTAG		"CUtlRBTreeFix"
@@ -76,6 +76,6 @@
 //#define SMEXT_ENABLE_TEXTPARSERS
 //#define SMEXT_ENABLE_USERMSGS
 //#define SMEXT_ENABLE_TRANSLATOR
-#define SMEXT_ENABLE_ROOTCONSOLEMENU
+//#define SMEXT_ENABLE_ROOTCONSOLEMENU
 
 #endif // _INCLUDE_SOURCEMOD_EXTENSION_CONFIG_H_
