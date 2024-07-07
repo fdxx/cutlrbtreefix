@@ -12,12 +12,9 @@
 ```sh
 ## Debian as an example.
 dpkg --add-architecture i386
-apt update
-apt install -y clang g++-multilib wget git
+apt update && apt install -y clang g++-multilib wget git make
 
-## Switch to non-root user
 export CC=clang && export CXX=clang++
-
 wget https://xmake.io/shget.text -O - | bash
 
 mkdir temp && cd temp

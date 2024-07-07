@@ -131,7 +131,7 @@ target("cutlrbtreefix")
 			"_vsnprintf=vsnprintf",
 			"_alloca=alloca")
 		add_cxflags(
-			"-Werror", "-Wall", 
+			"-Wall", 
 			"-Wno-implicit-int-float-conversion", 
 			"-Wno-overloaded-virtual", 
 			"-Wno-deprecated-register", 
