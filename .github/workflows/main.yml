@@ -12,20 +12,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  linux:
-    name: build with sm${{ matrix.sm_version }} on linux
-    runs-on: ubuntu-20.04
-    container:
-      image: debian:10-slim
-
+  build:
     strategy:
       fail-fast: false
       matrix:
-        sm_version:
-          - "1.10"
-          - "1.11"
-          - "latest"
+        sm_version: ["1.10", "1.11", "latest"]
+        os: [windows-2019, ubuntu-latest]
         include:
+          - os: windows-2019
+            os_short: windows
+
+          - os: ubuntu-latest
+            os_short: linux
+            container_image: debian:10
+
           - sm_version: "1.10"
             sm_branch: "1.10-dev"
 
@@ -35,25 +35,33 @@ jobs:
           - sm_version: latest
             sm_branch: master
 
+    name: build with sm${{ matrix.sm_version }} on ${{ matrix.os_short }}
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container_image }}
+
     steps:
       - name: Getting GITHUB_SHA_SHORT
         shell: bash
         run: |
           echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
-          
-      - name: Install clang
+
+      - name: Install linux dependencies
+        if: ${{ matrix.os_short == 'linux' }}
+        shell: bash
         run: |
-          dpkg --add-architecture i386
-          apt-get update
-          apt-get install -y clang g++-multilib git make
+          apt update && apt install -y apt-transport-https lsb-release wget curl software-properties-common gnupg g++-multilib git make
+          bash <(curl -fsSL https://apt.llvm.org/llvm.sh) 11
+          ln -s /usr/bin/clang-11 /usr/bin/clang
+          ln -s /usr/bin/clang++-11 /usr/bin/clang++
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
+          echo "XMAKE_ROOT=y" >> $GITHUB_ENV
 
       - name: Getting xmake
         uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: latest
-
+          
       - name: Getting SourceMod ${{ matrix.sm_version }}
         uses: actions/checkout@v4
         with:
@@ -89,90 +97,6 @@ jobs:
           path: src
 
       - name: Compile ${{ github.event.repository.name }}
-        shell: bash
-        working-directory: src
-        run: |
-          export XMAKE_ROOT=y
-          xmake f --SMPATH=../sourcemod-${{ matrix.sm_version }} --HL2SDKPATH=../hl2sdk-l4d2 --HL2SDKNAME=l4d2 --SAFETYHOOKPATH=../safetyhook
-          xmake -rv cutlrbtreefix
-          xmake f --SMPATH=../sourcemod-${{ matrix.sm_version }} --HL2SDKPATH=../hl2sdk-l4d --HL2SDKNAME=l4d --SAFETYHOOKPATH=../safetyhook
-          xmake -rv cutlrbtreefix
-
-      - name: Uploading package
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ github.event.repository.name }}-sm${{ matrix.sm_version }}-linux-${{ env.GITHUB_SHA_SHORT }}
-          path: src/release
-  
-
-  windows:
-    name: build with sm${{ matrix.sm_version }} on windows
-    runs-on: windows-2019
-
-    strategy:
-      fail-fast: false
-      matrix:
-        sm_version:
-          - "1.10"
-          - "1.11"
-          - "latest"
-        include:
-          - sm_version: "1.10"
-            sm_branch: "1.10-dev"
-
-          - sm_version: "1.11"
-            sm_branch: "1.11-dev"
-
-          - sm_version: latest
-            sm_branch: master
-
-    steps:
-      - name: Getting GITHUB_SHA_SHORT
-        shell: bash
-        run: |
-          echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
-
-      - name: Getting xmake
-        uses: xmake-io/github-action-setup-xmake@v1
-        with:
-          xmake-version: latest
-
-      - name: Getting SourceMod ${{ matrix.sm_version }}
-        uses: actions/checkout@v4
-        with:
-          repository: alliedmodders/sourcemod
-          ref: ${{ matrix.sm_branch }}
-          path: sourcemod-${{ matrix.sm_version }}
-          submodules: recursive
-          
-      - name: Getting hl2sdk-l4d2
-        uses: actions/checkout@v4
-        with:
-          repository: alliedmodders/hl2sdk
-          ref: l4d2
-          path: hl2sdk-l4d2
-
-      - name: Getting hl2sdk-l4d
-        uses: actions/checkout@v4
-        with:
-          repository: alliedmodders/hl2sdk
-          ref: l4d
-          path: hl2sdk-l4d
-      
-      - name: Getting safetyhook
-        uses: actions/checkout@v4
-        with:
-          repository: alliedmodders/safetyhook
-          ref: main
-          path: safetyhook
-
-      - name: Getting own repository
-        uses: actions/checkout@v4
-        with:
-          path: src
-
-      - name: Compile ${{ github.event.repository.name }}
-        shell: powershell
         working-directory: src
         run: |
           xmake f --SMPATH=../sourcemod-${{ matrix.sm_version }} --HL2SDKPATH=../hl2sdk-l4d2 --HL2SDKNAME=l4d2 --SAFETYHOOKPATH=../safetyhook
@@ -183,6 +107,6 @@ jobs:
       - name: Uploading package
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-sm${{ matrix.sm_version }}-windows-${{ env.GITHUB_SHA_SHORT }}
+          name: ${{ github.event.repository.name }}-sm${{ matrix.sm_version }}-${{ matrix.os_short }}-${{ env.GITHUB_SHA_SHORT }}
           path: src/release
-          
+ 
