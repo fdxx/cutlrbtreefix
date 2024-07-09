@@ -12,27 +12,20 @@
 ```sh
 ## Debian as an example.
 dpkg --add-architecture i386
-apt update
-apt install -y clang g++-multilib python3 python3-pip git
-
-mkdir temp && cd temp
-
-git clone --depth=1 -b 1.11-dev --recurse-submodules https://github.com/alliedmodders/sourcemod sourcemod
-git clone --depth=1 -b 1.11-dev https://github.com/alliedmodders/metamod-source metamod
-git clone --depth=1 -b l4d2 https://github.com/alliedmodders/hl2sdk hl2sdk-l4d2
-git clone --depth=1 https://github.com/fdxx/cutlrbtreefix
-
-python3 -m pip install wheel
-pip install git+https://github.com/alliedmodders/ambuild
-
-cd cutlrbtreefix
-mkdir build && cd build
+apt update && apt install -y clang g++-multilib wget git make
 
 export CC=clang && export CXX=clang++
+wget https://xmake.io/shget.text -O - | bash
 
-python3 ../configure.py --enable-optimize --sm-path="../../sourcemod" --mms-path="../../metamod"
+mkdir temp && cd temp
+git clone --depth=1 -b 1.11-dev --recurse-submodules https://github.com/alliedmodders/sourcemod sourcemod
+git clone --depth=1 -b l4d2 https://github.com/alliedmodders/hl2sdk hl2sdk-l4d2
+git clone --depth=1 https://github.com/alliedmodders/safetyhook safetyhook
+git clone --depth=1 https://github.com/fdxx/cutlrbtreefix
 
-ambuild
+cd cutlrbtreefix
+xmake f --SMPATH=../sourcemod --HL2SDKPATH=../hl2sdk-l4d2 --HL2SDKNAME=l4d2 --SAFETYHOOKPATH=../safetyhook
+xmake -rv cutlrbtreefix
 
-## Check the cutlrbtreefix/build/package folder.
+## Check the cutlrbtreefix/release folder.
 ```

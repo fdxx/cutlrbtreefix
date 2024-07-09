@@ -10,121 +10,103 @@ on:
     - LICENSE
     - README.md
   workflow_dispatch:
-  schedule:
-    - cron: '30 03 01 */3 *' # Artifacts expire every 3 months
 
 jobs:
   build:
-    name: build with sm${{ matrix.sm_version }} on ${{ matrix.os_short }}
-    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-20.04
-          - windows-latest
-
-        sm_version:
-          - "1.10"
-          - "1.11"
-          - "latest"
-          
+        sm_version: ["1.10", "1.11", "latest"]
+        os: [windows-2019, ubuntu-latest]
         include:
+          - os: windows-2019
+            os_short: windows
+
+          - os: ubuntu-latest
+            os_short: linux
+            container_image: debian:10
+
           - sm_version: "1.10"
             sm_branch: "1.10-dev"
-            meta_version: "1.10"
-            meta_branch: "1.10-dev"
 
           - sm_version: "1.11"
             sm_branch: "1.11-dev"
-            meta_version: "1.11"
-            meta_branch: "1.11-dev"
 
           - sm_version: latest
             sm_branch: master
-            meta_version: latest
-            meta_branch: master
-            
-          - os: ubuntu-20.04
-            os_short: linux
-          
-          - os: windows-latest
-            os_short: win
-     
+
+    name: build with sm${{ matrix.sm_version }} on ${{ matrix.os_short }}
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container_image }}
+
     steps:
-      - name: Prepare env
+      - name: Getting GITHUB_SHA_SHORT
         shell: bash
         run: |
           echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
-          
-      - name: Install (Linux)
-        if: runner.os == 'Linux'
+
+      - name: Install linux dependencies
+        if: ${{ matrix.os_short == 'linux' }}
+        shell: bash
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y clang g++-multilib
+          apt update && apt install -y apt-transport-https lsb-release wget curl software-properties-common gnupg g++-multilib git make
+          bash <(curl -fsSL https://apt.llvm.org/llvm.sh) 11
+          ln -s /usr/bin/clang-11 /usr/bin/clang
+          ln -s /usr/bin/clang++-11 /usr/bin/clang++
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
+          echo "XMAKE_ROOT=y" >> $GITHUB_ENV
+
+      - name: Getting xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
           
       - name: Getting SourceMod ${{ matrix.sm_version }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: alliedmodders/sourcemod
           ref: ${{ matrix.sm_branch }}
           path: sourcemod-${{ matrix.sm_version }}
           submodules: recursive
           
-      - name: Getting MM:Source ${{ matrix.meta_version }}
-        uses: actions/checkout@v3
-        with:
-          repository: alliedmodders/metamod-source
-          ref: ${{ matrix.meta_branch }}
-          path: metamod-${{ matrix.meta_version }}
-
-      - name: Setting up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10' 
-        
-      - name: Getting ambuild
-        run: |
-          python -m pip install wheel
-          pip install git+https://github.com/alliedmodders/ambuild
-          
       - name: Getting hl2sdk-l4d2
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: alliedmodders/hl2sdk
           ref: l4d2
           path: hl2sdk-l4d2
 
       - name: Getting hl2sdk-l4d
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: alliedmodders/hl2sdk
           ref: l4d
           path: hl2sdk-l4d
-          
+      
+      - name: Getting safetyhook
+        uses: actions/checkout@v4
+        with:
+          repository: alliedmodders/safetyhook
+          ref: main
+          path: safetyhook
+
       - name: Getting own repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: src
-          
-      - name: Compiling ${{ github.event.repository.name }} files
-        shell: bash
+
+      - name: Compile ${{ github.event.repository.name }}
         working-directory: src
         run: |
-          mkdir build
-          cd build
-          python \
-            ../configure.py \
-            --enable-optimize \
-            --sm-path="${{ github.workspace }}/sourcemod-${{ matrix.sm_version }}"\
-            --mms-path="${{ github.workspace }}/metamod-${{ matrix.meta_version }}"
-          ambuild
-          
+          xmake f --SMPATH=../sourcemod-${{ matrix.sm_version }} --HL2SDKPATH=../hl2sdk-l4d2 --HL2SDKNAME=l4d2 --SAFETYHOOKPATH=../safetyhook
+          xmake -rv cutlrbtreefix
+          xmake f --SMPATH=../sourcemod-${{ matrix.sm_version }} --HL2SDKPATH=../hl2sdk-l4d --HL2SDKNAME=l4d --SAFETYHOOKPATH=../safetyhook
+          xmake -rv cutlrbtreefix
+
       - name: Uploading package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.repository.name }}-sm${{ matrix.sm_version }}-${{ matrix.os_short }}-${{ env.GITHUB_SHA_SHORT }}
-          path: src/build/package
+          path: src/release
+ 
