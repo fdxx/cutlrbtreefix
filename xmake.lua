@@ -24,7 +24,8 @@ target("safetyhook")
 
 	if is_plat("windows") then
 		set_toolchains("msvc")
-		add_cxflags("/Ox", "/Oy-", "/EHsc", "/wd4819", "/MT", "/Z7")
+		add_cxflags("/W3", "/permissive-", "/w14640", "/wd4819", "/Ox", "/Oy-", "/EHsc", "/MT", "/Z7")
+		
 		if has_config("DEBUG") then
 			add_cxflags("/Od")
 		end
@@ -32,7 +33,9 @@ target("safetyhook")
 	else
 		set_toolchains("clang")
 		add_cxflags(
-			"-Werror", "-Wall",
+			"-Wall", "-Wextra",
+			"-Wshadow", "-pedantic",
+			"-Wnon-virtual-dtor",
 			"-Wno-unused-const-variable",
 			"-Wno-unused-function",
 			"-fvisibility=hidden", 
@@ -105,8 +108,9 @@ target("cutlrbtreefix")
 	if is_plat("windows") then
 		set_toolchains("msvc")
 		add_defines(
-			"_WINDOWS", "WIN32", "NDEBUG")
-		add_cxflags("/Ox", "/Oy-", "/EHsc", "/wd4819", "/MT", "/WX", "/Z7")
+			"_WINDOWS", "WIN32", "NDEBUG",
+			'_CRT_SECURE_NO_WARNINGS')
+		add_cxflags("/W3", "/wd4819", "/Ox", "/Oy-", "/EHsc", "/MT", "/Z7")
 
 		if has_config("DEBUG") then
 			add_cxflags("/Od")
@@ -131,7 +135,8 @@ target("cutlrbtreefix")
 			"_vsnprintf=vsnprintf",
 			"_alloca=alloca")
 		add_cxflags(
-			"-Werror", "-Wall",
+			"-Wall",
+			"-Wshadow",
 			"-Wno-implicit-int-float-conversion", 
 			"-Wno-overloaded-virtual", 
 			"-Wno-deprecated-register", 
