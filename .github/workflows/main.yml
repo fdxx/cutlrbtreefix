@@ -42,9 +42,9 @@ jobs:
         shell: bash
         run: |
           apt update && apt install -y apt-transport-https lsb-release wget curl software-properties-common gnupg g++-multilib git make
-          bash <(curl -fsSL https://apt.llvm.org/llvm.sh) 11
-          ln -s /usr/bin/clang-11 /usr/bin/clang
-          ln -s /usr/bin/clang++-11 /usr/bin/clang++
+          bash <(curl -fsSL https://apt.llvm.org/llvm.sh) 18
+          ln -s /usr/bin/clang-18 /usr/bin/clang
+          ln -s /usr/bin/clang++-18 /usr/bin/clang++
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
           echo "XMAKE_ROOT=y" >> $GITHUB_ENV
