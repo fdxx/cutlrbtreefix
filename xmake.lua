@@ -218,7 +218,7 @@ target("cutlrbtreefix")
 	end
 	
 	after_build(function (target)
-		os.tryrm("release")
+		-- os.tryrm("release")
 		os.mkdir("release/addons/sourcemod/extensions")
 		os.mkdir("release/addons/sourcemod/gamedata")
 		os.cp(path.join(target:targetdir(), target:filename()), "release/addons/sourcemod/extensions")
