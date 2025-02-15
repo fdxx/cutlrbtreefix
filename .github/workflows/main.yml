@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sm_version: ["1.11", "1.12"]
+        sm_version: ["1.11", "1.12", "latest"]
         os: [windows-2019, ubuntu-latest]
         include:
           - os: windows-2019
@@ -29,6 +29,9 @@ jobs:
 
           - sm_version: "1.12"
             sm_branch: "1.12-dev"
+          
+          - sm_version: "latest"
+            sm_branch: "master"
 
     name: build with sm${{ matrix.sm_version }} on ${{ matrix.os_short }}
     runs-on: ${{ matrix.os }}
