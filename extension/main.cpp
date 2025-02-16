@@ -1,10 +1,8 @@
 #include "mempool.h"
 #include "packed_entity.h"
-#include "stringpool.h"
-#include <stdio.h>
-#include <string.h>
-#include "smsdk_ext.h"
-#include "safetyhook.hpp"
+#include <tier1/stringpool.h>
+#include <smsdk_ext.h>
+#include <safetyhook.hpp>
 
 
 class CUtlRBTreeFix : public SDKExtension
@@ -66,7 +64,7 @@ public:
 
 	CClassMemoryPoolExt<PackedEntity> *m_PackedEntitiesPool()
 	{
-		return (CClassMemoryPoolExt<PackedEntity>*)((char*)this + g_iPackedEntitiesPool);
+		return (CClassMemoryPoolExt<PackedEntity>*)(uintptr_t(this) + g_iPackedEntitiesPool);
 	}
 };
 
