@@ -2,12 +2,14 @@ name: build
 
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - main
-    paths:
-      - pushbuild.txt
+    inputs:
+      version:
+        description: 'Enter version'
+        required: true
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -15,14 +17,14 @@ jobs:
       fail-fast: false
       matrix:
         sm_version: ["1.11", "1.12", "latest"]
-        os: [windows-2019, ubuntu-latest]
+        os: [windows-2022, ubuntu-latest]
         include:
-          - os: windows-2019
+          - os: windows-2022
             os_short: windows
 
           - os: ubuntu-latest
             os_short: linux
-            container_image: debian:10
+            container_image: debian:11
 
           - sm_version: "1.11"
             sm_branch: "1.11-dev"
@@ -47,7 +49,7 @@ jobs:
         if: ${{ matrix.os_short == 'linux' }}
         shell: bash
         run: |
-          apt update && apt install -y apt-transport-https lsb-release wget curl software-properties-common gnupg g++-multilib git make
+          apt update && apt install -y apt-transport-https lsb-release wget curl software-properties-common gnupg g++-multilib git make zip
           bash <(curl -fsSL https://apt.llvm.org/llvm.sh) 18
           echo "/usr/lib/llvm-18/bin" >> $GITHUB_PATH
           echo "CC=clang" >> $GITHUB_ENV
@@ -60,7 +62,7 @@ jobs:
           xmake-version: latest
           
       - name: Getting SourceMod ${{ matrix.sm_version }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: alliedmodders/sourcemod
           ref: ${{ matrix.sm_branch }}
@@ -68,28 +70,28 @@ jobs:
           submodules: recursive
       
       - name: Getting hl2sdk-l4d2
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: alliedmodders/hl2sdk
           ref: l4d2
           path: hl2sdk-l4d2
 
       - name: Getting hl2sdk-l4d
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: alliedmodders/hl2sdk
           ref: l4d
           path: hl2sdk-l4d
           
       - name: Getting safetyhook
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: alliedmodders/safetyhook
           ref: main
           path: safetyhook
 
       - name: Getting own repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: src
 
@@ -101,9 +103,18 @@ jobs:
           xmake f -c --SMPATH=../sourcemod-${{ matrix.sm_version }} --HL2SDKPATH=../hl2sdk-l4d --HL2SDKNAME=l4d --SAFETYHOOKPATH=../safetyhook
           xmake -rv cutlrbtreefix
 
-      - name: Uploading package
-        uses: actions/upload-artifact@v4
+      - name: Archive Release
+        uses: thedoctor0/zip-release@0.7.6
         with:
-          name: ${{ github.event.repository.name }}-sm${{ matrix.sm_version }}-${{ matrix.os_short }}-${{ env.GITHUB_SHA_SHORT }}
-          path: src/release
- 
+          type: 'zip'
+          directory: src/release
+          filename: "../${{ github.event.repository.name }}-sm${{ matrix.sm_version }}-${{ matrix.os_short }}-${{ env.GITHUB_SHA_SHORT }}.zip"
+          
+      - name: Uploading package
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.version }}
+          name: ${{ inputs.version }}
+          files: src/${{ github.event.repository.name }}-sm${{ matrix.sm_version }}-${{ matrix.os_short }}-${{ env.GITHUB_SHA_SHORT }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
